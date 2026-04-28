@@ -65,8 +65,7 @@ class GoBool(GoType):
         >>> GoBool.decode(bytes([1]))
         (True, b'')
         """
-        n, buf = GoUint.decode(buf)
-        return n == 1, buf
+        pass
 
     @staticmethod
     def encode(b):
@@ -77,7 +76,7 @@ class GoBool(GoType):
         >>> list(GoBool.encode(True))
         [1]
         """
-        return GoUint.encode(int(b))
+        pass
 
 
 class GoUint(GoType):
@@ -99,16 +98,7 @@ class GoUint(GoType):
         >>> GoUint.decode(bytes([254, 1, 0]))
         (256, b'')
         """
-        if buf[0] < 128:  # small uint in a single byte
-            return buf[0], buf[1:]
-
-        # larger uint split over multiple bytes
-        length = 256 - buf[0]
-        n = 0
-        for b in buf[1:length]:
-            n = (n + b) << 8
-        n += buf[length]
-        return n, buf[length + 1:]
+        pass
 
     @staticmethod
     def encode(n):
@@ -119,17 +109,7 @@ class GoUint(GoType):
         >>> list(GoUint.encode(256))
         [254, 1, 0]
         """
-        if n < 0:
-            raise ValueError('negative number for GoUint.encode: %s' % n)
-        if n < 128:
-            return bytes([n])
-        else:
-            encoded = []
-            while n:
-                encoded.append(n & 0xFF)
-                n = n >> 8
-            encoded.append(256 - len(encoded))
-            return bytes(reversed(encoded))
+        pass
 
 
 class GoInt(GoType):
@@ -151,10 +131,7 @@ class GoInt(GoType):
         >>> GoInt.decode(bytes([6]))
         (3, b'')
         """
-        uint, buf = GoUint.decode(buf)
-        if uint & 1:
-            uint = ~uint
-        return uint >> 1, buf
+        pass
 
     @staticmethod
     def encode(n):
@@ -165,11 +142,7 @@ class GoInt(GoType):
         >>> list(GoInt.encode(3))
         [6]
         """
-        if n < 0:
-            uint = (~n << 1) | 1
-        else:
-            uint = n << 1
-        return GoUint.encode(uint)
+        pass
 
 
 class GoFloat(GoType):
@@ -191,10 +164,7 @@ class GoFloat(GoType):
         >>> GoFloat.decode(bytes([254, 244, 63]))
         (1.25, b'')
         """
-        n, buf = GoUint.decode(buf)
-        rev = struct.pack('>Q', n)
-        (f, ) = struct.unpack('<d', rev)
-        return f, buf
+        pass
 
     @staticmethod
     def encode(f):
@@ -222,9 +192,7 @@ class GoFloat(GoType):
         They only differ in the so-called "payload" of the value,
         which is ignored in most applications.
         """
-        rev = struct.pack('<d', f)
-        (n, ) = struct.unpack('>Q', rev)
-        return GoUint.encode(n)
+        pass
 
 
 class GoByteSlice(GoType):
@@ -238,7 +206,7 @@ class GoByteSlice(GoType):
 
     @classproperty
     def zero(cls):
-        return bytearray()
+        pass
 
     @staticmethod
     def decode(buf):
@@ -248,8 +216,7 @@ class GoByteSlice(GoType):
         >>> GoByteSlice.decode(bytes([5, 104, 101, 108, 108, 111]))
         (bytearray(b'hello'), b'')
         """
-        count, buf = GoUint.decode(buf)
-        return bytearray(buf[:count]), buf[count:]
+        pass
 
     @staticmethod
     def encode(buf):
@@ -258,7 +225,7 @@ class GoByteSlice(GoType):
         >>> list(GoByteSlice.encode(b'hello'))
         [5, 104, 101, 108, 108, 111]
         """
-        return GoUint.encode(len(buf)) + buf
+        pass
 
 
 class GoString(GoType):
@@ -279,11 +246,7 @@ class GoString(GoType):
         >>> GoString.decode(bytes([5, 104, 101, 108, 108, 111]))
         (b'hello', b'')
         """
-        count, buf = GoUint.decode(buf)
-        # TODO: Go strings do not guarantee any particular encoding.
-        # Add support for trying to decode the bytes using, say,
-        # UTF-8, so we can return a real Python string.
-        return buf[:count], buf[count:]
+        pass
 
     @staticmethod
     def encode(s):
@@ -294,7 +257,7 @@ class GoString(GoType):
         >>> GoString.encode('alpha: α')
         b'\\talpha: \\xce\\xb1'
         """
-        return GoByteSlice.encode(s.encode('utf-8'))
+        pass
 
 
 class GoComplex(GoType):
@@ -314,9 +277,7 @@ class GoComplex(GoType):
         >>> GoComplex.decode(bytes([0, 254, 244, 63]))
         (1.25j, b'')
         """
-        re, buf = GoFloat.decode(buf)
-        im, buf = GoFloat.decode(buf)
-        return complex(re, im), buf
+        pass
 
     @staticmethod
     def encode(z):
@@ -325,7 +286,7 @@ class GoComplex(GoType):
         >>> list(GoComplex.encode(1.25j))
         [0, 254, 244, 63]
         """
-        return GoFloat.encode(z.real) + GoFloat.encode(z.imag)
+        pass
 
 
 class GoStruct(GoType):
@@ -336,8 +297,7 @@ class GoStruct(GoType):
 
     @property
     def zero(self):
-        values = [self._loader.types[t].zero for (n, t) in self._fields]
-        return self._class._make(values)
+        pass
 
     def __init__(self, typeid, name, loader, fields):
         """A Go struct with a certain set of fields.
@@ -361,17 +321,7 @@ class GoStruct(GoType):
 
     def decode(self, buf):
         """Decode data from buf and return a namedtuple."""
-        values = {}
-        field_id = -1
-        while True:
-            delta, buf = GoUint.decode(buf)
-            if delta == 0:
-                break
-            field_id += delta
-            name, typeid = self._fields[field_id]
-            value, buf = self._loader.types[typeid].decode(buf)
-            values[name] = value
-        return self.zero._replace(**values), buf
+        pass
 
     def __repr__(self):
         """GoStruct representation.
@@ -393,36 +343,7 @@ class GoWireType(GoStruct):
 
     def decode(self, buf):
         """Decode data from buf and return a GoType."""
-        wire_type, buf = super().decode(buf)
-
-        if wire_type.ArrayT != self._loader.types[ARRAY_TYPE].zero:
-            typeid = wire_type.ArrayT.CommonType.Id
-            elem = wire_type.ArrayT.Elem
-            length = wire_type.ArrayT.Len
-            return GoArray(typeid, self._loader, elem, length), buf
-
-        if wire_type.SliceT != self._loader.types[SLICE_TYPE].zero:
-            typeid = wire_type.SliceT.CommonType.Id
-            elem = wire_type.SliceT.Elem
-            return GoSlice(typeid, self._loader, elem), buf
-
-        if wire_type.StructT != self._loader.types[STRUCT_TYPE].zero:
-            typeid = wire_type.StructT.CommonType.Id
-            # Named tuples must be constructed using strings, not
-            # bytes, so we need to decode the names here. Go source
-            # files are defined to be UTF-8 encoded.
-            name = wire_type.StructT.CommonType.Name.decode('utf-8')
-            fields = [(f.Name.decode('utf-8'), f.Id)
-                      for f in wire_type.StructT.Field]
-            return GoStruct(typeid, name, self._loader, fields), buf
-
-        if wire_type.MapT != self._loader.types[MAP_TYPE].zero:
-            typeid = wire_type.MapT.CommonType.Id
-            key_typeid = wire_type.MapT.Key
-            elem_typeid = wire_type.MapT.Elem
-            return GoMap(typeid, self._loader, key_typeid, elem_typeid), buf
-
-        raise NotImplementedError("cannot handle %s" % wire_type)
+        pass
 
 
 class GoArray(GoType):
@@ -433,7 +354,7 @@ class GoArray(GoType):
 
     @property
     def zero(self):
-        return (self._loader.types[self._elem].zero, ) * self._length
+        pass
 
     def __init__(self, typeid, loader, elem, length):
         """A Go array of a certain type and length.
@@ -454,15 +375,7 @@ class GoArray(GoType):
         Go arrays have a fixed size and cannot be resized. This makes
         them more like Python tuples than Python lists.
         """
-        count, buf = GoUint.decode(buf)
-        assert count == self._length, \
-            "expected %d elements, found %d" % (self._length, count)
-
-        result = []
-        for i in range(count):
-            value, buf = self._loader.decode_value(self._elem, buf)
-            result.append(value)
-        return tuple(result), buf
+        pass
 
 
 class GoSlice(GoType):
@@ -473,7 +386,7 @@ class GoSlice(GoType):
 
     @property
     def zero(cls):
-        return []
+        pass
 
     def __init__(self, typeid, loader, elem):
         """A Go slice of a certain type.
@@ -493,13 +406,7 @@ class GoSlice(GoType):
         Go slices can extended later (with a possible reallocation of
         the underlying array) and are thus similar to Python lists.
         """
-        count, buf = GoUint.decode(buf)
-
-        result = []
-        for i in range(count):
-            value, buf = self._loader.decode_value(self._elem, buf)
-            result.append(value)
-        return result, buf
+        pass
 
 
 class GoMap(GoType):
@@ -510,7 +417,7 @@ class GoMap(GoType):
 
     @property
     def zero(cls):
-        return {}
+        pass
 
     def __init__(self, typeid, loader, key_typeid, elem_typeid):
         """A Go map with a certain key and element type.
@@ -527,11 +434,4 @@ class GoMap(GoType):
 
     def decode(self, buf):
         """Decode data from buf and return a dict."""
-        count, buf = GoUint.decode(buf)
-
-        result = {}
-        for i in range(count):
-            key, buf = self._loader.decode_value(self._key_typeid, buf)
-            value, buf = self._loader.decode_value(self._elem_typeid, buf)
-            result[key] = value
-        return result, buf
+        pass

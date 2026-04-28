@@ -5,3 +5,6 @@ pygob.egg-info/
 __pycache__/
 .tox/
 .hypothesis/
+
+.aider*
+logs/
